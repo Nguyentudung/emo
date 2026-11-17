@@ -11,15 +11,16 @@ members = [
     "cache-engine",
     "metadata-engine",
 ]
+exclude = ["third_party/rune"]
 
 [workspace.package]
-version = "0.0.1"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 authors = ["Veyra Team"]
 
 [workspace.dependencies]
-slint = { version = "1.8", features = ["std"] }
+rune = { git = "https://github.com/anomalyco/rune.git", rev = "cca5df6fafb4721d96fe105f126ebfd2ec351bb6", default-features = true }
 image = "0.25"
 rayon = "1.10"
 tracing = "0.1"
@@ -35,3 +36,12 @@ walkdir = "2.5"
 chrono = "0.4"
 dirs = "5.0"
 rfd = "0.15"
+
+[patch.crates-io]
+# Rune's dev branch includes this patched crate in its own workspace. Applications
+# consuming Rune as a git dependency need to provide the same patch at the root.
+parley_engine = { path = "third_party/parley_engine" }
+
+[patch."https://github.com/anomalyco/rune.git"]
+rune = { path = "third_party/rune/crates/rune" }
+
