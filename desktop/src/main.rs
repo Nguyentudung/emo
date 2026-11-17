@@ -85,6 +85,26 @@ fn load_and_set_image(weak_window: Weak<MainWindow>, path: PathBuf, state: Arc<M
                     win.set_has_image(true);
                     win.set_error_text("".into());
                     win.set_current_filename(file_name.into());
+                    win.set_image_dimensions(format!("{} × {}", width, height).into());
+                    win.set_metadata_folder(
+                        path.parent()
+                            .and_then(|p| p.file_name())
+                            .map(|n| n.to_string_lossy().to_string())
+                            .unwrap_or_default()
+                            .into(),
+                    );
+                    win.set_metadata_format(
+                        path.extension().map(|e| e.to_string_lossy().to_uppercase()).unwrap_or_default().into(),
+                    );
+                    if let Ok(meta) = std::fs::metadata(&path) {
+                        win.set_metadata_file_size(format!("{} bytes", meta.len()).into());
+                        win.set_metadata_created(
+                            meta.created().ok().map(|t| format!("{:?}", t)).unwrap_or_default().into(),
+                        );
+                        win.set_metadata_modified(
+                            meta.modified().ok().map(|t| format!("{:?}", t)).unwrap_or_default().into(),
+                        );
+                    }
                     win.set_status_text(format!("{} × {} px", width, height).into());
                     win.set_zoom(1.0);
                     win.set_pan_x(0.0);

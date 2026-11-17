@@ -1,0 +1,28 @@
+import { Theme } from "../theme.slint";
+import { Icons } from "../icons.slint";
+
+export component EmptyState inherits Rectangle {
+    callback open-folder();
+    callback open-file();
+    background: transparent;
+    VerticalLayout {
+        alignment: center;
+        spacing: 12px;
+        HorizontalLayout { alignment: center; Image { source: Icons.empty; width: 72px; height: 72px; colorize: Theme.icon-muted; } }
+        HorizontalLayout { alignment: center; Text { text: "View and Edit Images"; color: Theme.text; font-size: 22px; font-weight: 700; } }
+        HorizontalLayout { alignment: center; Text { text: "Choose a folder or file to start viewing"; color: Theme.secondary-text; font-size: 13px; } }
+        HorizontalLayout { alignment: center;
+            Rectangle {
+                width: 160px; height: 38px; border-radius: Theme.pill-radius; background: area.pressed ? #0066d6 : (area.has-hover ? #168fff : Theme.accent);
+                Text { text: "Open Folder..."; color: white; horizontal-alignment: center; vertical-alignment: center; }
+                area := TouchArea { mouse-cursor: pointer; clicked => { root.open-folder(); } }
+            }
+        }
+        HorizontalLayout { alignment: center;
+            Text {
+                text: "or Open File..."; color: Theme.secondary-text; font-size: 13px;
+                file-area := TouchArea { mouse-cursor: pointer; clicked => { root.open-file(); } }
+            }
+        }
+    }
+}

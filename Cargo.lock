@@ -756,7 +756,7 @@ checksum = "fc652a48c352aef3ea3aed32080501cf3ef6ed5da78602a020c991775b0aff04"
 
 [[package]]
 name = "cache-engine"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "lru",
 ]
@@ -1103,7 +1103,7 @@ dependencies = [
 
 [[package]]
 name = "desktop"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "cache-engine",
@@ -1396,7 +1396,7 @@ dependencies = [
 
 [[package]]
 name = "filesystem"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "media-core",
@@ -2459,7 +2459,7 @@ dependencies = [
 
 [[package]]
 name = "image-engine"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "image",
@@ -2908,7 +2908,7 @@ dependencies = [
 
 [[package]]
 name = "media-core"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "anyhow",
  "serde",
@@ -2940,7 +2940,7 @@ dependencies = [
 
 [[package]]
 name = "metadata-engine"
-version = "0.1.0"
+version = "0.0.1"
 
 [[package]]
 name = "minimal-lexical"
@@ -4904,7 +4904,7 @@ dependencies = [
 
 [[package]]
 name = "task-manager"
-version = "0.1.0"
+version = "0.0.1"
 
 [[package]]
 name = "tempfile"
@@ -4967,7 +4967,7 @@ dependencies = [
 
 [[package]]
 name = "thumbnail-engine"
-version = "0.1.0"
+version = "0.0.1"
 
 [[package]]
 name = "tiff"
@@ -5378,7 +5378,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "video-engine"
-version = "0.1.0"
+version = "0.0.1"
 
 [[package]]
 name = "vtable"

@@ -1,0 +1,22 @@
+import { Theme } from "../theme.slint";
+import { Icons } from "../icons.slint";
+import { ToolButton } from "toolbar.slint";
+
+export component FloatingControls inherits Rectangle {
+    callback prev(); callback next(); callback zoom-in(); callback zoom-preset(float);
+    in property <bool> has-previous: false; in property <bool> has-next: false; in property <float> zoom: 1.0; in-out property <bool> menu-open: false;
+    background: transparent;
+    Rectangle { x: 16px; y: parent.height - 52px; width: 96px; height: 36px; border-radius: 18px; background: #00000099; border-width: 0px;
+        HorizontalLayout { alignment: center; padding-left: 10px; padding-right: 10px; spacing: 8px; ToolButton { icon: Icons.previous; frosted: true; enabled: root.has-previous; clicked => { root.prev(); } } ToolButton { icon: Icons.next; frosted: true; enabled: root.has-next; clicked => { root.next(); } } }
+    }
+    Rectangle { x: parent.width - 112px; y: parent.height - 52px; width: 96px; height: 36px; border-radius: 18px; background: #00000099; border-width: 0px;
+        HorizontalLayout { alignment: center; padding-left: 10px; padding-right: 10px; spacing: 8px; ToolButton { icon: Icons.zoom-in; frosted: true; clicked => { root.zoom-in(); } } Rectangle { width: 34px; height: 34px; border-radius: 14px; background: dropdown.pressed ? #ffffff2e : (dropdown.has-hover ? #ffffff1f : transparent); Text { text: "⌄"; color: #ffffff; font-size: 16px; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; } dropdown := TouchArea { clicked => { root.menu-open = !root.menu-open; } } } }
+        if root.menu-open: Rectangle { x: -78px; y: -252px; width: 188px; height: 242px; border-radius: 12px; background: #383838; border-width: 1px; border-color: #505050;
+            VerticalLayout { padding: 8px; spacing: 2px;
+                Text { text: "Zoom"; color: #bdbdbd; font-size: 11px; }
+                for preset in [{label: "300%", value: 3.0}, {label: "200%", value: 2.0}, {label: "100%", value: 1.0}, {label: "66%", value: 0.66}, {label: "50%", value: 0.5}]: Rectangle { height: 30px; Text { text: preset.label; color: Theme.text; x: 10px; vertical-alignment: center; } TouchArea { clicked => { root.zoom-preset(preset.value); root.menu-open = false; } } }
+                Rectangle { height: 30px; Text { text: "Fit"; color: Theme.text; x: 10px; vertical-alignment: center; } TouchArea { clicked => { root.zoom-preset(0); root.menu-open = false; } } }
+            }
+        }
+    }
+}

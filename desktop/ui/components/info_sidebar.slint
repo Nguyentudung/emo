@@ -1,0 +1,16 @@
+import { Theme } from "../theme.slint";
+
+export component InfoSidebar inherits Rectangle {
+    in property <string> folder; in property <string> dimensions; in property <string> format; in property <string> file-size; in property <string> created; in property <string> modified;
+    width: 280px; background: #292929;
+    VerticalLayout { padding: 16px; spacing: 10px;
+        Text { text: "Image Information"; color: Theme.text; font-size: 15px; font-weight: 700; }
+        Rectangle { height: 1px; background: #444444; }
+        Text { text: "Folder"; color: Theme.secondary-text; font-size: 11px; } Text { text: root.folder; color: Theme.text; overflow: elide; }
+        Text { text: "Image Size"; color: Theme.secondary-text; font-size: 11px; } Text { text: root.dimensions; color: Theme.text; }
+        Text { text: "Image Format"; color: Theme.secondary-text; font-size: 11px; } Text { text: root.format; color: Theme.text; }
+        Text { text: "File Size"; color: Theme.secondary-text; font-size: 11px; } Text { text: root.file-size; color: Theme.text; }
+        Text { text: "File Created"; color: Theme.secondary-text; font-size: 11px; } Text { text: root.created; color: Theme.text; }
+        Text { text: "File Modified"; color: Theme.secondary-text; font-size: 11px; } Text { text: root.modified; color: Theme.text; }
+    }
+}
