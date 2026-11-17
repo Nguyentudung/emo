@@ -1,0 +1,6 @@
+[package]
+name = "metadata-engine"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

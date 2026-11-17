@@ -1,0 +1,6 @@
+[package]
+name = "task-manager"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

@@ -1,0 +1,23 @@
+[package]
+name = "desktop"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "veyra"
+path = "src/main.rs"
+
+[dependencies]
+slint.workspace = true
+media-core = { path = "../media-core" }
+image-engine = { path = "../image-engine" }
+filesystem = { path = "../filesystem" }
+cache-engine = { path = "../cache-engine" }
+anyhow.workspace = true
+tracing.workspace = true
+rfd.workspace = true
+tokio.workspace = true
+image.workspace = true
+
+[build-dependencies]
+slint-build = "1.8"

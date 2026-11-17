@@ -1,0 +1,1168 @@
+import { VerticalBox, HorizontalBox, Button, ListView } from "std-widgets.slint";
+
+// ========================================================
+// REUSABLE BASE ATOMS
+// ========================================================
+
+// Flat Adwaita symbolic icon button
+component IconButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> tooltip: "";
+    in property <bool> active: false;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    width: 34px;
+    height: 34px;
+    border-radius: 6px;
+    background: !root.enabled ? transparent : (ta.pressed ? #444444 : (root.active ? #404040 : (ta.has-hover ? #383838 : transparent)));
+
+    Image {
+        source: root.icon;
+        width: 16px;
+        height: 16px;
+        colorize: !root.enabled ? #555555 : (root.active ? #ffffff : (ta.has-hover ? #ffffff : #d5d5d5));
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Vertical divider between toolbar groups
+component ToolbarSeparator inherits Rectangle {
+    width: 1px;
+    height: 20px;
+    background: #3d3d3d;
+    // NOTE: y is NOT set here — parent HorizontalLayout centers it automatically
+}
+
+// Small icon button used inside popover menu rows
+component MenuIconButton inherits Rectangle {
+    in property <image> icon;
+    in property <bool> enabled: true;
+    callback clicked();
+
+    width: 28px;
+    height: 28px;
+    border-radius: 4px;
+    background: !root.enabled ? transparent : (ta.pressed ? #525252 : (ta.has-hover ? #464646 : #383838));
+
+    Image {
+        source: root.icon;
+        width: 14px;
+        height: 14px;
+        colorize: !root.enabled ? #606060 : #ffffff;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Popover menu row
+component MenuItem inherits Rectangle {
+    in property <string> text;
+    in property <string> shortcut: "";
+    in property <bool> enabled: true;
+    callback clicked();
+
+    height: 32px;
+    border-radius: 6px;
+    background: !root.enabled ? transparent : (ta.pressed ? #4c4c4c : (ta.has-hover ? #404040 : transparent));
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        alignment: space-between;
+
+        Text {
+            text: root.text;
+            color: root.enabled ? #ffffff : #707070;
+            font-size: 13px;
+            vertical-alignment: center;
+        }
+
+        if root.shortcut != "": Text {
+            text: root.shortcut;
+            color: root.enabled ? #9a9996 : #505050;
+            font-size: 12px;
+            vertical-alignment: center;
+        }
+    }
+
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: root.enabled ? pointer : default;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Popover menu separator
+component MenuSeparator inherits Rectangle {
+    height: 9px;
+
+    Rectangle {
+        y: 4px;
+        x: 6px;
+        width: parent.width - 12px;
+        height: 1px;
+        background: #424242;
+    }
+}
+
+// Rotate row in popover menu
+component MenuRotateRow inherits Rectangle {
+    in property <bool> enabled: true;
+    callback rotate-left();
+    callback rotate-right();
+
+    height: 34px;
+    border-radius: 6px;
+    background: transparent;
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 8px;
+        alignment: space-between;
+
+        Text {
+            text: "Rotate";
+            color: root.enabled ? #ffffff : #707070;
+            font-size: 13px;
+            vertical-alignment: center;
+        }
+
+        HorizontalLayout {
+            spacing: 4px;
+
+            MenuIconButton {
+                icon: @image-url("icons-adwaita/object-rotate-left-symbolic.svg");
+                enabled: root.enabled;
+                clicked => { root.rotate-left(); }
+            }
+
+            MenuIconButton {
+                icon: @image-url("icons-adwaita/object-rotate-right-symbolic.svg");
+                enabled: root.enabled;
+                clicked => { root.rotate-right(); }
+            }
+        }
+    }
+}
+
+// ========================================================
+// TOOLBAR GROUP COMPONENTS
+// ========================================================
+
+// Nhóm 1: Navigation (Back/Prev, Next, Open File, Open Folder)
+component ToolbarNavGroup inherits HorizontalLayout {
+    in property <bool> has-image: false;
+    in property <bool> has-multiple: false;
+    callback prev-image();
+    callback next-image();
+    callback open-file();
+    callback open-folder();
+
+    spacing: 3px;
+
+    IconButton {
+        icon: @image-url("icons-adwaita/go-previous-symbolic.svg");
+        tooltip: "Previous Image (Left Arrow)";
+        enabled: root.has-image && root.has-multiple;
+        clicked => { root.prev-image(); }
+    }
+
+    IconButton {
+        icon: @image-url("icons-adwaita/go-next-symbolic.svg");
+        tooltip: "Next Image (Right Arrow)";
+        enabled: root.has-image && root.has-multiple;
+        clicked => { root.next-image(); }
+    }
+
+    IconButton {
+        icon: @image-url("icons-adwaita/document-open-symbolic.svg");
+        tooltip: "Open File (Ctrl+O)";
+        clicked => { root.open-file(); }
+    }
+
+    IconButton {
+        icon: @image-url("icons-adwaita/folder-open-symbolic.svg");
+        tooltip: "Open Folder";
+        clicked => { root.open-folder(); }
+    }
+}
+
+// Nhóm 2: Image Operations (Rotate Left, Rotate Right)
+component ToolbarTransformGroup inherits HorizontalLayout {
+    in property <bool> enabled: false;
+    callback rotate-left();
+    callback rotate-right();
+
+    spacing: 3px;
+
+    IconButton {
+        icon: @image-url("icons-adwaita/object-rotate-left-symbolic.svg");
+        tooltip: "Rotate Left ([)";
+        enabled: root.enabled;
+        clicked => { root.rotate-left(); }
+    }
+
+    IconButton {
+        icon: @image-url("icons-adwaita/object-rotate-right-symbolic.svg");
+        tooltip: "Rotate Right (])";
+        enabled: root.enabled;
+        clicked => { root.rotate-right(); }
+    }
+}
+
+// Nhóm 3: Zoom & View (Zoom Out, %, Zoom In)
+// NOTE: Fit and Actual-Size buttons are placed OUTSIDE this component
+// in the main toolbar so responsive if-conditions don't create binding loops.
+component ToolbarZoomGroup inherits HorizontalLayout {
+    in property <bool> enabled: false;
+    in property <float> zoom: 1.0;
+    callback zoom-in();
+    callback zoom-out();
+    callback fit-window();
+    callback actual-size();
+
+    spacing: 3px;
+
+    IconButton {
+        icon: @image-url("icons-adwaita/zoom-out-symbolic.svg");
+        tooltip: "Zoom Out (-)";
+        enabled: root.enabled;
+        clicked => { root.zoom-out(); }
+    }
+
+    // Zoom percentage pill (clickable to reset to fit)
+    Rectangle {
+        width: 46px;
+        height: 34px;
+        border-radius: 6px;
+        background: zoom-ta.pressed ? #444444 : (zoom-ta.has-hover ? #383838 : transparent);
+
+        Text {
+            text: root.enabled ? Math.round(root.zoom * 100) + "%" : "100%";
+            color: root.enabled ? #ffffff : #707070;
+            font-size: 12px;
+            font-weight: 500;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+
+        zoom-ta := TouchArea {
+            enabled: root.enabled;
+            mouse-cursor: root.enabled ? pointer : default;
+            clicked => { root.fit-window(); }
+        }
+    }
+
+    IconButton {
+        icon: @image-url("icons-adwaita/zoom-in-symbolic.svg");
+        tooltip: "Zoom In (+)";
+        enabled: root.enabled;
+        clicked => { root.zoom-in(); }
+    }
+}
+
+// Nhóm 4: Information (Properties toggle)
+component ToolbarInfoGroup inherits HorizontalLayout {
+    in property <bool> enabled: false;
+    in property <bool> active: false;
+    callback toggle-properties();
+
+    IconButton {
+        icon: @image-url("icons-adwaita/info-symbolic.svg");
+        tooltip: "Image Properties (Ctrl+I)";
+        active: root.active;
+        enabled: root.enabled;
+        clicked => { root.toggle-properties(); }
+    }
+}
+
+// ========================================================
+// EMPTY STATE COMPONENT (MATHEMATICALLY CENTERED)
+// ========================================================
+component EmptyState inherits Rectangle {
+    callback open-file();
+    callback open-folder();
+
+    VerticalLayout {
+        alignment: center;
+        spacing: 14px;
+
+        // Center the icon horizontally via HorizontalLayout
+        HorizontalLayout {
+            alignment: center;
+
+            Image {
+                source: @image-url("icons-adwaita/image-x-generic-symbolic.svg");
+                width: 76px;
+                height: 76px;
+                colorize: #555555;
+            }
+        }
+
+        Text {
+            text: "View Images";
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            horizontal-alignment: center;
+        }
+
+        Text {
+            text: "Drag and drop images here, or choose an option below";
+            color: #909090;
+            font-size: 13px;
+            horizontal-alignment: center;
+        }
+
+        Rectangle { height: 6px; }
+
+        HorizontalLayout {
+            alignment: center;
+            spacing: 12px;
+
+            // Open File Pill Button
+            Rectangle {
+                width: 136px;
+                height: 38px;
+                border-radius: 8px;
+                background: of-ta.pressed ? #484848 : (of-ta.has-hover ? #3e3e3e : #323232);
+
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 8px;
+
+                    Image {
+                        source: @image-url("icons-adwaita/document-open-symbolic.svg");
+                        width: 16px;
+                        height: 16px;
+                        colorize: #ffffff;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "Open File...";
+                        color: #ffffff;
+                        font-size: 13px;
+                        font-weight: 500;
+                        vertical-alignment: center;
+                    }
+                }
+
+                of-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.open-file(); }
+                }
+            }
+
+            // Open Folder Pill Button
+            Rectangle {
+                width: 146px;
+                height: 38px;
+                border-radius: 8px;
+                background: od-ta.pressed ? #484848 : (od-ta.has-hover ? #3e3e3e : #323232);
+
+                HorizontalLayout {
+                    alignment: center;
+                    spacing: 8px;
+
+                    Image {
+                        source: @image-url("icons-adwaita/folder-open-symbolic.svg");
+                        width: 16px;
+                        height: 16px;
+                        colorize: #ffffff;
+                        vertical-alignment: center;
+                    }
+
+                    Text {
+                        text: "Open Folder...";
+                        color: #ffffff;
+                        font-size: 13px;
+                        font-weight: 500;
+                        vertical-alignment: center;
+                    }
+                }
+
+                od-ta := TouchArea {
+                    mouse-cursor: pointer;
+                    clicked => { root.open-folder(); }
+                }
+            }
+        }
+    }
+}
+
+// ========================================================
+// STATUS BAR COMPONENT
+// ========================================================
+component AppStatusBar inherits Rectangle {
+    in property <bool> has-image: false;
+    in property <string> filename: "";
+    in property <string> dimensions: "";
+    in property <int> current-index: -1;
+    in property <int> total-files: 0;
+    in property <float> zoom: 1.0;
+    in property <int> rotation: 0;
+
+    height: 26px;
+    background: #242424;
+
+    Rectangle {
+        y: 0;
+        height: 1px;
+        background: #1c1c1c;
+    }
+
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        alignment: space-between;
+
+        // Left info
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: start;
+
+            Text {
+                text: root.has-image ? root.filename : "Ready";
+                color: root.has-image ? #d0d0d0 : #757575;
+                font-size: 11px;
+                vertical-alignment: center;
+                overflow: elide;
+                max-width: 400px;
+            }
+
+            if root.has-image && root.dimensions != "": Rectangle {
+                width: 1px;
+                height: 12px;
+                background: #383838;
+                y: (parent.height - self.height) / 2;
+            }
+
+            if root.has-image && root.dimensions != "": Text {
+                text: root.dimensions;
+                color: #888888;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+        }
+
+        // Right info
+        if root.has-image: HorizontalLayout {
+            spacing: 12px;
+            alignment: end;
+
+            if root.total-files > 1: Text {
+                text: (root.current-index + 1) + " of " + root.total-files;
+                color: #888888;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+
+            if root.rotation != 0: Text {
+                text: root.rotation + "°";
+                color: #888888;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+
+            Text {
+                text: Math.round(root.zoom * 100) + "%";
+                color: #888888;
+                font-size: 11px;
+                vertical-alignment: center;
+            }
+        }
+    }
+}
+
+// ========================================================
+// MAIN WINDOW
+// ========================================================
+export component MainWindow inherits Window {
+    title: "Veyra";
+    preferred-width: 1100px;
+    preferred-height: 720px;
+    min-width: 640px;
+    min-height: 480px;
+    background: #1e1e1e;
+    default-font-size: 13px;
+    forward-focus: root-focus;
+
+    in property <[string]> files: [];
+    in property <int> current-index: -1;
+    in property <string> status-text: "";
+    in-out property <float> zoom: 1.0;
+    in property <int> rotation: 0;
+    in property <image> current-image;
+    in property <bool> has-image: false;
+    in property <string> error-text: "";
+    in property <string> current-filename: "";
+    in-out property <bool> is-fullscreen: false;
+
+    in-out property <float> pan-x: 0;
+    in-out property <float> pan-y: 0;
+    in-out property <bool> show-properties: false;
+    in-out property <bool> show-shortcuts: false;
+    in-out property <bool> show-about: false;
+
+    callback open-folder();
+    callback open-file();
+    callback new-window();
+    callback quit-app();
+    callback set-wallpaper();
+    callback select-file(int);
+    callback zoom-in();
+    callback zoom-out();
+    callback fit-window();
+    callback actual-size();
+    callback rotate-left();
+    callback rotate-right();
+    callback prev-image();
+    callback next-image();
+    callback toggle-fullscreen();
+
+    // Always show all toolbar buttons (responsive hiding via root.width causes
+    // binding loops in Slint's layout engine — min-width 640px is enough room)
+    property <bool> show-fit: true;
+    property <bool> show-rotate: true;
+
+    // Aspect ratio & clamp logic for viewer
+    property <float> img-w: root.current-image.width * 1.0;
+    property <float> img-h: root.current-image.height * 1.0;
+    property <float> vw: viewer.width / 1px;
+    property <float> vh: viewer.height / 1px;
+
+    property <float> fit-scale: img-w > 0 && img-h > 0 && vw > 0 && vh > 0
+        ? min(vw / img-w, vh / img-h)
+        : 1.0;
+
+    property <float> rendered-w: img-w * fit-scale * root.zoom;
+    property <float> rendered-h: img-h * fit-scale * root.zoom;
+
+    property <float> max-pan-x: max(0, (rendered-w - vw) / 2);
+    property <float> max-pan-y: max(0, (rendered-h - vh) / 2);
+    property <float> clamped-pan-x: min(max(root.pan-x, -max-pan-x), max-pan-x);
+    property <float> clamped-pan-y: min(max(root.pan-y, -max-pan-y), max-pan-y);
+
+    root-focus := FocusScope {
+        width: 0px;
+        height: 0px;
+        key-pressed(event) => {
+            if (event.text == Key.Escape) {
+                if (root.show-shortcuts) { root.show-shortcuts = false; return accept; }
+                if (root.show-about) { root.show-about = false; return accept; }
+                if (root.show-properties) { root.show-properties = false; return accept; }
+                if (root.is-fullscreen) { root.toggle-fullscreen(); return accept; }
+            }
+            if (event.modifiers.control) {
+                if (event.text == "o" || event.text == "O") { root.open-file(); return accept; }
+                if (event.text == "n" || event.text == "N") { root.new-window(); return accept; }
+                if (event.text == "q" || event.text == "Q") { root.quit-app(); return accept; }
+                if (event.text == "i" || event.text == "I") { root.show-properties = !root.show-properties; return accept; }
+                if (event.text == "?") { root.show-shortcuts = !root.show-shortcuts; return accept; }
+            }
+            if (event.text == Key.LeftArrow) { root.prev-image(); return accept; }
+            if (event.text == Key.RightArrow) { root.next-image(); return accept; }
+            if (event.text == "+" || event.text == "=") { root.zoom-in(); return accept; }
+            if (event.text == "-") { root.zoom-out(); return accept; }
+            if (event.text == "0") { root.fit-window(); return accept; }
+            if (event.text == "1") { root.actual-size(); return accept; }
+            if (event.text == "[") { root.rotate-left(); return accept; }
+            if (event.text == "]") { root.rotate-right(); return accept; }
+            if (event.text == Key.F11) { root.toggle-fullscreen(); return accept; }
+            reject
+        }
+    }
+
+    VerticalLayout {
+        spacing: 0;
+
+        // ==========================================
+        // A. WINDOW HEADER (CLEAN & CENTERED TITLE)
+        // ==========================================
+        window-header := Rectangle {
+            height: 38px;
+            background: #242424;
+
+            // Bottom subtle border
+            Rectangle {
+                y: parent.height - 1px;
+                height: 1px;
+                background: #1c1c1c;
+            }
+
+            HorizontalLayout {
+                padding-left: 8px;
+                padding-right: 8px;
+                alignment: space-between;
+
+                // Left: Fullscreen Toggle
+                IconButton {
+                    icon: @image-url("icons-adwaita/view-fullscreen-symbolic.svg");
+                    tooltip: "Toggle Fullscreen (F11)";
+                    active: root.is-fullscreen;
+                    clicked => { root.toggle-fullscreen(); }
+                }
+
+                // Center: Window / File Title
+                // Use horizontal-stretch so the layout engine constrains it
+                // rather than max-width (which causes a binding loop)
+                Text {
+                    text: root.current-filename == "" ? "Veyra" : root.current-filename;
+                    color: #ffffff;
+                    font-size: 13px;
+                    font-weight: 600;
+                    overflow: elide;
+                    horizontal-stretch: 1;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+
+                // Right: Quick shortcuts trigger
+                IconButton {
+                    icon: @image-url("icons-adwaita/help-about-symbolic.svg");
+                    tooltip: "Keyboard Shortcuts (Ctrl+?)";
+                    clicked => { root.show-shortcuts = true; }
+                }
+            }
+        }
+
+        // ==========================================
+        // B. MAIN TOOLBAR (ORGANIZED IN 5 DISTINCT GROUPS)
+        // ==========================================
+        main-toolbar := Rectangle {
+            height: 44px;
+            background: #2c2c2c;
+
+            // Bottom border
+            Rectangle {
+                y: parent.height - 1px;
+                height: 1px;
+                background: #202020;
+            }
+
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 8px;
+                alignment: start;
+
+                // --- NHÓM 1: NAVIGATION ---
+                ToolbarNavGroup {
+                    has-image: root.has-image;
+                    has-multiple: root.files.length > 1;
+                    prev-image => { root.prev-image(); }
+                    next-image => { root.next-image(); }
+                    open-file => { root.open-file(); }
+                    open-folder => { root.open-folder(); }
+                }
+
+                ToolbarSeparator {}
+
+                // --- NHÓM 2: IMAGE OPERATIONS (Rotate Left, Rotate Right) ---
+                if root.show-rotate: ToolbarTransformGroup {
+                    enabled: root.has-image;
+                    rotate-left => { root.rotate-left(); }
+                    rotate-right => { root.rotate-right(); }
+                }
+
+                if root.show-rotate: ToolbarSeparator {}
+
+                // --- NHÓM 3: ZOOM & VIEW ---
+                ToolbarZoomGroup {
+                    enabled: root.has-image;
+                    zoom: root.zoom;
+                    zoom-in => { root.zoom-in(); }
+                    zoom-out => { root.zoom-out(); }
+                    fit-window => { root.fit-window(); }
+                    actual-size => { root.actual-size(); }
+                }
+
+                // Fit & Actual-Size are placed INLINE here (outside ToolbarZoomGroup)
+                // so the responsive if-conditions don't create binding loops via component in-properties
+                if root.show-fit: IconButton {
+                    icon: @image-url("icons-adwaita/zoom-fit-best-symbolic.svg");
+                    tooltip: "Fit to Window (0)";
+                    enabled: root.has-image;
+                    clicked => { root.fit-window(); }
+                }
+
+                if root.show-fit: IconButton {
+                    icon: @image-url("icons-adwaita/zoom-original-symbolic.svg");
+                    tooltip: "Actual Size (1)";
+                    enabled: root.has-image;
+                    clicked => { root.actual-size(); }
+                }
+
+                ToolbarSeparator {}
+
+                // --- NHÓM 4: INFORMATION ---
+                ToolbarInfoGroup {
+                    enabled: root.has-image;
+                    active: root.show-properties;
+                    toggle-properties => { root.show-properties = !root.show-properties; }
+                }
+
+                // Spacer pushes application menu to the right
+                Rectangle {
+                    horizontal-stretch: 1;
+                }
+
+                ToolbarSeparator {}
+
+                // --- NHÓM 5: APPLICATION & POPUP MENU ---
+                hamburger := IconButton {
+                    icon: @image-url("icons-adwaita/open-menu-symbolic.svg");
+                    tooltip: "Main Menu";
+                    active: menu-popup.is-open;
+                    clicked => {
+                        menu-popup.show();
+                    }
+
+                    // Native GNOME Loupe popover menu
+                    menu-popup := PopupWindow {
+                        x: parent.width - self.width;
+                        y: parent.height + 4px;
+                        width: 270px;
+                        close-policy: close-on-click-outside;
+
+                        Rectangle {
+                            background: #323232;
+                            border-radius: 12px;
+                            border-width: 1px;
+                            border-color: #484848;
+                            clip: true;
+
+                            VerticalLayout {
+                                padding: 6px;
+                                spacing: 1px;
+
+                                // --- Application ---
+                                MenuItem {
+                                    text: "New Window";
+                                    shortcut: "Ctrl+N";
+                                    clicked => { menu-popup.close(); root.new-window(); }
+                                }
+                                MenuItem {
+                                    text: "Open...";
+                                    shortcut: "Ctrl+O";
+                                    clicked => { menu-popup.close(); root.open-file(); }
+                                }
+                                MenuItem {
+                                    text: "Open Folder...";
+                                    clicked => { menu-popup.close(); root.open-folder(); }
+                                }
+
+                                MenuSeparator {}
+
+                                // --- Image Actions ---
+                                MenuItem {
+                                    text: "Open With...";
+                                    shortcut: "Shift+Ctrl+O";
+                                    enabled: false;
+                                }
+                                MenuItem {
+                                    text: "Print...";
+                                    shortcut: "Ctrl+P";
+                                    enabled: false;
+                                }
+
+                                MenuSeparator {}
+
+                                // --- Transform (Rotate row) ---
+                                MenuRotateRow {
+                                    enabled: root.has-image;
+                                    rotate-left => { menu-popup.close(); root.rotate-left(); }
+                                    rotate-right => { menu-popup.close(); root.rotate-right(); }
+                                }
+                                MenuItem {
+                                    text: "Fit to Window";
+                                    shortcut: "0";
+                                    enabled: root.has-image;
+                                    clicked => { menu-popup.close(); root.fit-window(); }
+                                }
+                                MenuItem {
+                                    text: "Actual Size";
+                                    shortcut: "1";
+                                    enabled: root.has-image;
+                                    clicked => { menu-popup.close(); root.actual-size(); }
+                                }
+
+                                MenuSeparator {}
+
+                                // --- Wallpaper & Properties ---
+                                MenuItem {
+                                    text: "Set as Background...";
+                                    shortcut: "Ctrl+F8";
+                                    enabled: root.has-image;
+                                    clicked => { menu-popup.close(); root.set-wallpaper(); }
+                                }
+                                MenuItem {
+                                    text: "Image Properties";
+                                    shortcut: "Ctrl+I";
+                                    clicked => { menu-popup.close(); root.show-properties = !root.show-properties; }
+                                }
+
+                                MenuSeparator {}
+
+                                // --- Help & App ---
+                                MenuItem {
+                                    text: "Keyboard Shortcuts";
+                                    shortcut: "Ctrl+?";
+                                    clicked => { menu-popup.close(); root.show-shortcuts = true; }
+                                }
+                                MenuItem {
+                                    text: "About Veyra";
+                                    clicked => { menu-popup.close(); root.show-about = true; }
+                                }
+                                MenuItem {
+                                    text: "Quit";
+                                    shortcut: "Ctrl+Q";
+                                    clicked => { menu-popup.close(); root.quit-app(); }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // C. CONTENT AREA
+        // ==========================================
+        HorizontalLayout {
+            spacing: 0;
+
+            viewer := Rectangle {
+                background: #1e1e1e;
+                clip: true;
+
+                // 1. Loaded Image View
+                if root.has-image: Image {
+                    source: root.current-image;
+                    width: root.rendered-w * 1px;
+                    height: root.rendered-h * 1px;
+                    x: (parent.width - self.width) / 2 + root.clamped-pan-x * 1px;
+                    y: (parent.height - self.height) / 2 + root.clamped-pan-y * 1px;
+                    transform-rotation: root.rotation * 1deg;
+                }
+
+                // 2. Empty State View (Perfect horizontal & vertical centering)
+                if !root.has-image && root.error-text == "": EmptyState {
+                    open-file => { root.open-file(); }
+                    open-folder => { root.open-folder(); }
+                }
+
+                // 3. Error state
+                if !root.has-image && root.error-text != "": Text {
+                    text: root.error-text;
+                    color: #f66151;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                    wrap: word-wrap;
+                }
+
+                // Drag-to-pan TouchArea (active when zoomed in)
+                TouchArea {
+                    property <float> sx: 0;
+                    property <float> sy: 0;
+                    property <float> spx: 0;
+                    property <float> spy: 0;
+
+                    pointer-event(event) => {
+                        if (event.kind == PointerEventKind.down && root.has-image && root.zoom > 1.01) {
+                            self.sx = self.mouse-x / 1px;
+                            self.sy = self.mouse-y / 1px;
+                            self.spx = root.pan-x;
+                            self.spy = root.pan-y;
+                        }
+                    }
+                    moved => {
+                        if (self.pressed && root.has-image && root.zoom > 1.01) {
+                            root.pan-x = self.spx + (self.mouse-x / 1px - self.sx);
+                            root.pan-y = self.spy + (self.mouse-y / 1px - self.sy);
+                        }
+                    }
+                }
+            }
+
+            // Image properties sidebar
+            if root.show-properties: Rectangle {
+                width: 280px;
+                background: #252525;
+
+                Rectangle {
+                    x: 0;
+                    width: 1px;
+                    background: #333333;
+                }
+
+                VerticalLayout {
+                    padding: 16px;
+                    spacing: 12px;
+                    alignment: start;
+
+                    HorizontalLayout {
+                        alignment: space-between;
+                        Text {
+                            text: "Image Properties";
+                            color: #ffffff;
+                            font-weight: 700;
+                            font-size: 14px;
+                            vertical-alignment: center;
+                        }
+
+                        IconButton {
+                            icon: @image-url("icons-adwaita/info-symbolic.svg");
+                            clicked => { root.show-properties = false; }
+                        }
+                    }
+
+                    Rectangle { height: 1px; background: #383838; }
+
+                    Text {
+                        text: "File Name";
+                        color: #9a9a9a;
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+
+                    Text {
+                        text: root.current-filename;
+                        color: #ffffff;
+                        font-size: 13px;
+                        wrap: word-wrap;
+                    }
+
+                    Text {
+                        text: "Dimensions";
+                        color: #9a9a9a;
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+
+                    Text {
+                        text: root.status-text;
+                        color: #ffffff;
+                        font-size: 13px;
+                    }
+
+                    Text {
+                        text: "Current Rotation";
+                        color: #9a9a9a;
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+
+                    Text {
+                        text: root.rotation + "°";
+                        color: #ffffff;
+                        font-size: 13px;
+                    }
+
+                    Text {
+                        text: "Zoom Level";
+                        color: #9a9a9a;
+                        font-size: 11px;
+                        font-weight: 600;
+                    }
+
+                    Text {
+                        text: Math.round(root.zoom * 100) + "%";
+                        color: #ffffff;
+                        font-size: 13px;
+                    }
+                }
+            }
+        }
+
+        // ==========================================
+        // D. STATUS BAR
+        // ==========================================
+        AppStatusBar {
+            has-image: root.has-image;
+            filename: root.current-filename;
+            dimensions: root.status-text;
+            current-index: root.current-index;
+            total-files: root.files.length;
+            zoom: root.zoom;
+            rotation: root.rotation;
+        }
+    }
+
+    // ==========================================
+    // KEYBOARD SHORTCUTS MODAL DIALOG
+    // ==========================================
+    if root.show-shortcuts: Rectangle {
+        background: #00000088;
+
+        TouchArea {
+            clicked => { root.show-shortcuts = false; }
+        }
+
+        Rectangle {
+            width: 440px;
+            height: 380px;
+            background: #303030;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: #484848;
+
+            VerticalLayout {
+                padding: 20px;
+                spacing: 14px;
+
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text {
+                        text: "Keyboard Shortcuts";
+                        color: #ffffff;
+                        font-size: 16px;
+                        font-weight: 700;
+                        vertical-alignment: center;
+                    }
+
+                    IconButton {
+                        icon: @image-url("icons-adwaita/view-restore-symbolic.svg");
+                        clicked => { root.show-shortcuts = false; }
+                    }
+                }
+
+                Rectangle { height: 1px; background: #424242; }
+
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text { text: "Previous / Next Image"; color: #ffffff; font-size: 13px; }
+                    Text { text: "Left / Right Arrow"; color: #9a9996; font-size: 12px; }
+                }
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text { text: "Zoom In / Out"; color: #ffffff; font-size: 13px; }
+                    Text { text: "+  /  -"; color: #9a9996; font-size: 12px; }
+                }
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text { text: "Fit to Window / Actual Size"; color: #ffffff; font-size: 13px; }
+                    Text { text: "0  /  1"; color: #9a9996; font-size: 12px; }
+                }
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text { text: "Rotate Left / Right"; color: #ffffff; font-size: 13px; }
+                    Text { text: "[  /  ]"; color: #9a9996; font-size: 12px; }
+                }
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text { text: "Fullscreen"; color: #ffffff; font-size: 13px; }
+                    Text { text: "F11"; color: #9a9996; font-size: 12px; }
+                }
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text { text: "Open File / Open Folder"; color: #ffffff; font-size: 13px; }
+                    Text { text: "Ctrl+O"; color: #9a9996; font-size: 12px; }
+                }
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text { text: "Image Properties"; color: #ffffff; font-size: 13px; }
+                    Text { text: "Ctrl+I"; color: #9a9996; font-size: 12px; }
+                }
+                HorizontalLayout {
+                    alignment: space-between;
+                    Text { text: "Quit"; color: #ffffff; font-size: 13px; }
+                    Text { text: "Ctrl+Q"; color: #9a9996; font-size: 12px; }
+                }
+            }
+        }
+    }
+
+    // ==========================================
+    // ABOUT VEYRA MODAL DIALOG
+    // ==========================================
+    if root.show-about: Rectangle {
+        background: #00000088;
+
+        TouchArea {
+            clicked => { root.show-about = false; }
+        }
+
+        Rectangle {
+            width: 380px;
+            height: 260px;
+            background: #303030;
+            border-radius: 12px;
+            border-width: 1px;
+            border-color: #484848;
+
+            VerticalLayout {
+                padding: 24px;
+                alignment: center;
+                spacing: 10px;
+
+                Image {
+                    source: @image-url("icons-adwaita/image-x-generic-symbolic.svg");
+                    width: 48px;
+                    height: 48px;
+                    colorize: #3584e4;
+                    horizontal-alignment: center;
+                }
+
+                Text {
+                    text: "Veyra";
+                    color: #ffffff;
+                    font-size: 20px;
+                    font-weight: 700;
+                    horizontal-alignment: center;
+                }
+
+                Text {
+                    text: "Version 0.1.0";
+                    color: #9a9a9a;
+                    font-size: 12px;
+                    horizontal-alignment: center;
+                }
+
+                Text {
+                    text: "Modern, lightweight media viewer for GNOME desktop.";
+                    color: #cccccc;
+                    font-size: 13px;
+                    horizontal-alignment: center;
+                }
+
+                Rectangle { height: 6px; }
+
+                Rectangle {
+                    width: 90px;
+                    height: 32px;
+                    border-radius: 6px;
+                    background: close-ta.pressed ? #484848 : (close-ta.has-hover ? #404040 : #383838);
+
+                    Text {
+                        text: "Close";
+                        color: #ffffff;
+                        font-size: 13px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+
+                    close-ta := TouchArea {
+                        mouse-cursor: pointer;
+                        clicked => { root.show-about = false; }
+                    }
+                }
+            }
+        }
+    }
+}

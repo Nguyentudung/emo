@@ -1,0 +1,9 @@
+[package]
+name = "filesystem"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+walkdir.workspace = true
+anyhow.workspace = true
+media-core = { path = "../media-core" }
